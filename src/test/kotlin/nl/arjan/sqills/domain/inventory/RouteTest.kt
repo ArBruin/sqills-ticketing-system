@@ -21,21 +21,21 @@ class RouteTest {
 
     @Test
     fun `journey is valid when origin is before destination`() {
-        assertTrue(route.containsJourney(paris, amsterdam))
+        assertTrue(route.isValidJourney(paris, amsterdam))
     }
 
     @Test
     fun `journey is invalid when origin is after destination`() {
-        assertFalse(route.containsJourney(amsterdam, paris))
+        assertFalse(route.isValidJourney(amsterdam, paris))
     }
 
     @Test
     fun `journey is invalid when origin does not exist`() {
-        assertFalse(route.containsJourney(Station("London"), amsterdam))
+        assertFalse(route.isValidJourney(Station("London"), amsterdam))
     }
 
     @Test
     fun `journey is invalid when destination does not exist`() {
-        assertFalse(route.containsJourney(paris, Station("London")))
+        assertFalse(route.isValidJourney(paris, Station("London")))
     }
 }
