@@ -6,6 +6,7 @@ import nl.arjan.sqills.domain.booking.Passenger
 import nl.arjan.sqills.domain.booking.Ticket
 import nl.arjan.sqills.domain.inventory.Station
 import nl.arjan.sqills.domain.reservation.SeatReservation
+import nl.arjan.sqills.exceptions.InvalidJourneyException
 import nl.arjan.sqills.exceptions.SeatAlreadyReservedException
 import nl.arjan.sqills.exceptions.SeatNotFoundException
 import nl.arjan.sqills.exceptions.TrainServiceNotFoundException
@@ -30,6 +31,16 @@ class ReservationService(
             Passenger(
                 name = passengerRequest.name,
                 tickets = passengerRequest.tickets.map { ticketRequest ->
+                    val origin = Station(ticketRequest.origin)
+                    val destination = Station(ticketRequest.destination)
+
+                    if (!trainService.route.isValidJourney(origin, destination)) {
+                        throw InvalidJourneyException(
+                            "Journey ${ticketRequest.origin} to ${ticketRequest.destination} " +
+                                    "is not valid for service ${trainService.id.number}."
+                        )
+                    }
+
                     Ticket(
                         seatReservation = SeatReservation(
                             service = trainService,
@@ -57,6 +68,21 @@ class ReservationService(
         val requestedReservations = passengers
             .flatMap { it.tickets }
             .map { it.seatReservation }
+
+        requestedReservations.forEachIndexed { index, requestedReservation ->
+            val conflictsWithinRequest = requestedReservations
+                .drop(index + 1)
+                .any { otherReservation ->
+                    requestedReservation.overlapsWith(otherReservation)
+                }
+
+            if (conflictsWithinRequest) {
+                throw SeatAlreadyReservedException(
+                    "Seat ${requestedReservation.seat.carriage}" +
+                            "${requestedReservation.seat.number} is reserved more than once in the same request."
+                )
+            }
+        }
 
         requestedReservations.forEach { requestedReservation ->
             val alreadyReserved = existingReservations.any { existingReservation ->

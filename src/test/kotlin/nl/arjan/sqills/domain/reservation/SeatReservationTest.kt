@@ -27,8 +27,10 @@ class SeatReservationTest {
     )
 
     private val service = TrainService(
-        number = 5160,
-        date = LocalDate.of(2021, 4, 1),
+        id = TrainServiceId(
+            number = 5160,
+            date = LocalDate.of(2021, 4, 1),
+        ),
         route = route,
         carriages = emptyList()
     )

@@ -1,6 +1,7 @@
 package nl.arjan.sqills.repositories
 
 import nl.arjan.sqills.domain.inventory.TrainService
+import nl.arjan.sqills.domain.inventory.TrainServiceId
 import java.time.LocalDate
 
 class InMemoryTrainServiceRepository : TrainServiceRepository {
@@ -16,7 +17,7 @@ class InMemoryTrainServiceRepository : TrainServiceRepository {
         date: LocalDate
     ): TrainService? {
         return trainServices.firstOrNull {
-            it.number == number && it.date == date
+            it.id == TrainServiceId(number, date)
         }
     }
 }

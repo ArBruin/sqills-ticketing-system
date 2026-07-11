@@ -13,7 +13,7 @@ data class SeatReservation(
     val bookingId: UUID
 ) {
     fun overlapsWith(other: SeatReservation): Boolean {
-        if (service != other.service) {
+        if (service.id != other.service.id) {
             return false
         }
 

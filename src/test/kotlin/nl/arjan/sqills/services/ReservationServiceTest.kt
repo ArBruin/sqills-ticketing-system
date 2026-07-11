@@ -10,6 +10,8 @@ import nl.arjan.sqills.domain.inventory.Seat
 import nl.arjan.sqills.domain.inventory.SeatClass
 import nl.arjan.sqills.domain.inventory.Station
 import nl.arjan.sqills.domain.inventory.TrainService
+import nl.arjan.sqills.domain.inventory.TrainServiceId
+import nl.arjan.sqills.exceptions.InvalidJourneyException
 import nl.arjan.sqills.exceptions.SeatAlreadyReservedException
 import nl.arjan.sqills.exceptions.SeatNotFoundException
 import nl.arjan.sqills.exceptions.TrainServiceNotFoundException
@@ -137,6 +139,62 @@ class ReservationServiceTest {
         }
     }
 
+    @Test
+    fun `cannot reserve an invalid journey`() {
+        // Arrange
+        givenParisAmsterdamService()
+
+        val request = ReservationRequest(
+            serviceNumber = 5160,
+            serviceDate = LocalDate.of(2021, 4, 1),
+            passengers = listOf(
+                PassengerRequest(
+                    name = "Passenger 1",
+                    tickets = listOf(
+                        TicketRequest("Amsterdam", "Paris", "A", 11)
+                    )
+                )
+            )
+        )
+
+        // Act & Assert
+        assertFailsWith<InvalidJourneyException> {
+            reservationService.reserve(request)
+        }
+    }
+
+    @Test
+    fun `cannot reserve the same seat twice in one request`() {
+        // Arrange
+        givenParisAmsterdamService()
+
+        val request = ReservationRequest(
+            serviceNumber = 5160,
+            serviceDate = LocalDate.of(2021, 4, 1),
+            passengers = listOf(
+                PassengerRequest(
+                    name = "Passenger 1",
+                    tickets = listOf(
+                        TicketRequest("Paris", "Amsterdam", "A", 11)
+                    )
+                ),
+                PassengerRequest(
+                    name = "Passenger 2",
+                    tickets = listOf(
+                        TicketRequest("Paris", "Amsterdam", "A", 11)
+                    )
+                )
+            )
+        )
+
+        // Act & Assert
+        assertFailsWith<SeatAlreadyReservedException> {
+            reservationService.reserve(request)
+        }
+
+        assertEquals(0, bookingRepository.findAll().size)
+    }
+
     private fun givenParisAmsterdamService(): TrainService {
         val paris = Station("Paris")
         val brussels = Station("Brussels")
@@ -160,8 +218,10 @@ class ReservationServiceTest {
         )
 
         val service = TrainService(
-            number = 5160,
-            date = LocalDate.of(2021, 4, 1),
+            id = TrainServiceId(
+                number = 5160,
+                date = LocalDate.of(2021, 4, 1)
+            ),
             route = route,
             carriages = listOf(carriageA)
         )
@@ -214,10 +274,80 @@ class ReservationServiceTest {
         )
 
         val service = TrainService(
-            number = 5161,
-            date = LocalDate.of(2021, 4, 1),
+            id = TrainServiceId(
+                number = 5161,
+                date = LocalDate.of(2021, 4, 1)
+            ),
             route = route,
             carriages = listOf(carriageA, carriageH, carriageN, carriageT)
+        )
+
+        trainServiceRepository.save(service)
+
+        return service
+    }
+
+    private fun givenAmsterdamBerlinService(): TrainService {
+        val amsterdam = Station("Amsterdam")
+        val berlin = Station("Berlin")
+
+        val route = Route(
+            name = "Amsterdam to Berlin",
+            stops = listOf(
+                RouteStop(amsterdam, 0),
+                RouteStop(berlin, 650)
+            )
+        )
+
+        val carriageA = Carriage(
+            code = "A",
+            seats = listOf(
+                Seat("A", 1, SeatClass.FIRST),
+                Seat("A", 2, SeatClass.FIRST)
+            )
+        )
+
+        val service = TrainService(
+            id = TrainServiceId(
+                number = 6001,
+                date = LocalDate.of(2021, 4, 1)
+            ),
+            route = route,
+            carriages = listOf(carriageA)
+        )
+
+        trainServiceRepository.save(service)
+
+        return service
+    }
+
+    private fun givenParisLondonService(): TrainService {
+        val paris = Station("Paris")
+        val london = Station("London")
+
+        val route = Route(
+            name = "Paris to London",
+            stops = listOf(
+                RouteStop(paris, 0),
+                RouteStop(london, 650)
+            )
+        )
+
+        val carriageA = Carriage(
+            code = "A",
+            seats = listOf(
+                Seat("A", 1, SeatClass.FIRST),
+                Seat("A", 2, SeatClass.FIRST)
+            )
+        )
+
+        val service = TrainService(
+            id = TrainServiceId(
+                number = 6001,
+                date = LocalDate.of(2021, 4, 1)
+            ),
+            route = route,
+            carriages = listOf(carriageA)
         )
 
         trainServiceRepository.save(service)
